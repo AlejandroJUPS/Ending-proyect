@@ -1,0 +1,61 @@
+name: Publicar Ending en InfinityFree
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+      - name: Comprobar secretos obligatorios
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        run: |
+          test -n "$FTP_USERNAME" || { echo 'Falta FTP_USERNAME'; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo 'Falta FTP_PASSWORD'; exit 1; }
+          test -n "$MYSQL_PASSWORD" || { echo 'Falta MYSQL_PASSWORD'; exit 1; }
+      - name: Crear configuración privada de MySQL
+        env:
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          password = os.environ['MYSQL_PASSWORD']
+          def php_string(value):
+              return "'" + value.replace('\\', '\\\\').replace("'", "\\'") + "'"
+          contents = "<?php\nreturn [\n" + ''.join(
+              f"    {php_string(k)} => {php_string(v)},\n"
+              for k, v in {
+                  'host': 'sql102.infinityfree.com',
+                  'database': 'if0_43158060_END',
+                  'username': 'if0_43158060',
+                  'password': password,
+                  'port': '3306',
+              }.items()
+          ) + "];\n"
+          Path('db-config.php').write_text(contents, encoding='utf-8')
+          PY
+          echo "$GITHUB_SHA" > deploy-version.txt
+      - name: Publicar archivos por FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ftpupload.net
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 21
+          protocol: ftp
+          local-dir: ./
+          server-dir: /htdocs/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/README.md
+            **/.gitignore
