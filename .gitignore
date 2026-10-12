@@ -1,4 +1,4 @@
-/db-config.php
-/deploy-version.txt
-/.env
-/.env.*
+.private/
+roms/**
+!roms/.gitkeep
+.DS_Store
