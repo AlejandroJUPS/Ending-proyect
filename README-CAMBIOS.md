@@ -1,0 +1,1 @@
+Ending XMB expansión 1: cinco categorías, iconos desde icons/, banners desde banner consol/, vista previa a los 3 segundos, catálogo únicamente al confirmar, mandos Gamepad API, tema de dos colores guardado en localStorage. No requiere nuevas tablas MySQL. Las ROMs y los cores del servidor se conservan fuera del ZIP.
